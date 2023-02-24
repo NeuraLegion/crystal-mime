@@ -1,0 +1,9 @@
+name: crystal-mime
+version: 0.1.0
+
+authors:
+  - Jonathan Siegel <usiegj00@gmail.com>
+
+crystal: 1.7.2
+
+license: MIT
