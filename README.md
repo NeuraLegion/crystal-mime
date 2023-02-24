@@ -1,6 +1,6 @@
 # crystal-mime
 
-TODO: Write a description here
+Adding support for RAW mime email parsing.
 
 ## Installation
 
@@ -9,7 +9,7 @@ TODO: Write a description here
    ```yaml
    dependencies:
      crystal-mime:
-       github: usiegj00/crystal-mime
+       github: aluminumio/crystal-mime
    ```
 
 2. Run `shards install`
@@ -28,7 +28,7 @@ TODO: Write development instructions here
 
 ## Contributing
 
-1. Fork it (<https://github.com/usiegj00/crystal-mime/fork>)
+1. Fork it (<https://github.com/aluminumio/crystal-mime/fork>)
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
