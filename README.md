@@ -18,9 +18,9 @@ Adding support for RAW mime email parsing.
 
 ```crystal
 require "crystal-mime"
-```
 
-TODO: Write usage instructions here
+email = MIME.mail_object_from_raw(raw_email_mime)
+```
 
 ## Development
 
