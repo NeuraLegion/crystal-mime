@@ -1,9 +1,9 @@
 require "mime/multipart"
 require "time"
 
-# TODO: Write documentation for `Crystal::Mime`
-module Crystal::Mime
-  VERSION = "0.1.0"
+# TODO: Write documentation for `Crystal::MIME`
+module Crystal::MIME
+  VERSION = "0.1.1"
 
   struct Email
     property from
