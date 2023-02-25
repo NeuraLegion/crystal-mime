@@ -3,7 +3,7 @@ require "time"
 
 # TODO: Write documentation for `Crystal::MIME`
 module MIME
-  VERSION = "0.1.3"
+  VERSION = "0.1.4"
 
   struct Email
     property from
@@ -77,7 +77,7 @@ module MIME
   def self.mail_object_from_raw(raw_mime_data)
     parsed = parse_raw(raw_mime_data)
     Email.new(from:     parsed[:headers]["From"],
-              to:       parsed[:headers]["To"],    
+              to:       parsed[:headers]["To"]? || parsed[:headers]["recipient"],
               subject:  parsed[:headers]["Subject"],    
               datetime: Time::Format::RFC_2822.parse(parsed[:headers]["Date"]))
   end
