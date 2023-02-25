@@ -3,7 +3,7 @@ require "time"
 
 # TODO: Write documentation for `Crystal::MIME`
 module MIME
-  VERSION = "0.1.2"
+  VERSION = "0.1.3"
 
   struct Email
     property from
@@ -48,24 +48,30 @@ module MIME
       k,v = p.split("=")
       data[k] = unescape(v)
     end
-    boundary  = "#{MIME::Multipart.parse_boundary(data["Content-Type"])}"
 
-    # Manual parse:
-    parts = Array(String).new
-    buf   = Array(String).new
-    data["body-mime"].split("\n") do |line|
-      if(line == "--#{boundary}")
-        parts << buf.join("\n")
-        buf = Array(String).new
-      elsif(line == "--#{boundary}--") # Terminal boundary
-        parts << buf.join("\n") unless buf.empty?
-        buf = Array(String).new # But really should be done
-      else
-        buf << line
+    content_type = data["Content-Type"]?
+    if content_type
+      boundary  = "#{MIME::Multipart.parse_boundary(content_type)}"
+
+      # Manual parse:
+      parts = Array(String).new
+      buf   = Array(String).new
+      data["body-mime"].split("\n") do |line|
+        if(line == "--#{boundary}")
+          parts << buf.join("\n")
+          buf = Array(String).new
+        elsif(line == "--#{boundary}--") # Terminal boundary
+          parts << buf.join("\n") unless buf.empty?
+          buf = Array(String).new # But really should be done
+        else
+          buf << line
+        end
       end
+      non_mime = parts.shift # https://en.wikipedia.org/wiki/MIME#Multipart_messages
+      return { headers: data, non_mime: non_mime, mime: parts }
+    else
+      return { headers: data }
     end
-    non_mime = parts.shift # https://en.wikipedia.org/wiki/MIME#Multipart_messages
-    return { headers: data, non_mime: non_mime, mime: parts }
   end
 
   def self.mail_object_from_raw(raw_mime_data)
