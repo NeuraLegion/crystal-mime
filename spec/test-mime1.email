@@ -1,0 +1,43 @@
+From: Jerry Peek <jerry@ora.com>
+To: mh-users@ics.uci.edu
+Subject: New edition of "MH & xmh" covers MIME and MH-E
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="----- =_aaaaaaaaaa0"
+Content-ID: <1283.780402430.1@ora.com>
+
+------- =_aaaaaaaaaa0
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <1283.780402430.2@ora.com>
+
+We've just released the new third edition of "MH & xmh: Email for
+Users & Programmers."  Changes include:
+    - MIME (Multimedia) mail
+    - The popular MH-E GNU Emacs front-end to MH
+        ...omitted...
+
+------- =_aaaaaaaaaa0
+Content-Type: text/enriched; charset="us-ascii"
+Content-ID: <1283.780402430.3@ora.com>
+
+We've just released the new third edition of <italic>MH & xmh: Email
+for Users & Programmers</italic>. Changes include:
+
+<indent>
+- MIME (Multimedia) mail
+
+- The popular MH-E GNU Emacs front-end to MH
+        ...omitted...
+
+------- =_aaaaaaaaaa0
+Content-Type: application/postscript
+Content-ID: <1283.780402430.4@ora.com>
+Content-Transfer-Encoding: quoted-printable
+
+%!PS-Adobe-3.0
+%%Creator: groff version 1.09
+        ...omitted...
+%%Trailer
+end
+%%EOF
+
+------- =_aaaaaaaaaa0--

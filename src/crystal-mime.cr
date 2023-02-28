@@ -1,85 +1,107 @@
 require "mime/multipart"
 require "time"
 
-# TODO: Write documentation for `Crystal::MIME`
+# `MIME` Provides raw email parsing capabilities
 module MIME
-  VERSION = "0.1.5"
+  VERSION = "0.1.6"
 
   struct Email
     property from
     property to
     property subject
     property datetime
-    def initialize(@from : String, @to : String, @subject : String, @datetime : Time)
+    property body_html
+    property body_text
+    property attachments
+    def initialize(@from : String, @to : String, @subject : String, @datetime : Time | Nil, @body_html : String | Nil, @body_text : String | Nil, @attachments : Array(String))
     end
   end
 
-  def self.pack_h_star(str_array)
-    String.build do |io|
-      str_array.each do |number|
-        if number.to_i(16) > 256
-          puts("** Ignoring **")
-          puts("Num: #{number}")
-          puts("Num.to_i: #{number.to_i(16)}")
-          puts("Num.to_i.chr: #{number.to_i(16).chr}")
-        else
-          io.write_byte number.to_i(16).to_u8
-        end
-      end
-    end
+  # Support easy access with String
+  def self.parse_raw(mime_str : String)
+    self.parse_raw(IO::Memory.new(mime_str))
   end
 
-  def self.unescape(string)
-    str=string.tr("+", " ").gsub(/((?:%[0-9a-fA-F]{2})+)/) do |m|
-      # [m.delete("%")].pack("H*")
-      # puts(m.split("%").compact)
-      pack_h_star(m.split("%", remove_empty: true))
-    end # .force_encoding(encoding)
-    # str.valid_encoding? ? str : str.force_encoding(string.encoding)
-  end
-
+  # Support efficient access as IO Stream
   # Mail looks like:
   # Content-Type=multipart%2Fmixed%3B+boundary%3D%22------------020601070403020003080006%22&Date=Fri%2...
-  def self.parse_raw(escaped_mime_data)
-    unescaped_mime_data = HTML.unescape(escaped_mime_data)
-    # puts unescaped_mime_data.split("\n").first.split("&").first
-    data    = Hash(String, String).new
-    unescaped_mime_data.split("&").each do |p|
-      k,v = p.split("=")
-      data[k] = unescape(v)
+  def self.parse_raw(mime_io : IO, boundary : String | Nil = nil )
+    # Read headers in KEY: VAL format. RFC end is \n\n
+    headers = Hash(String, String).new
+    mime_io.each_line do |line|
+      break if line.blank?
+      k,v = line.split(": ", 2)
+      headers[k]=v
     end
-
-    content_type = data["Content-Type"]?
-    if content_type
-      boundary  = "#{MIME::Multipart.parse_boundary(content_type)}"
-
-      # Manual parse:
-      parts = Array(String).new
-      buf   = Array(String).new
-      data["body-mime"].split("\n") do |line|
-        if(line == "--#{boundary}")
-          parts << buf.join("\n")
-          buf = Array(String).new
-        elsif(line == "--#{boundary}--") # Terminal boundary
-          parts << buf.join("\n") unless buf.empty?
-          buf = Array(String).new # But really should be done
-        else
-          buf << line
+    
+    parts = Hash(String, String).new
+    body  = nil
+    content_type = headers["Content-Type"]?
+    if (boundary = is_multipart(content_type))
+      # puts "Parse multipart."
+      parser = MIME::Multipart::Parser.new(mime_io, boundary)
+      while parser.has_next?
+        parser.next do |headers, io|
+          content_type = headers["Content-Type"].split("; ", 2).first
+          parts[content_type] = io.gets_to_end
         end
       end
-      non_mime = parts.shift # https://en.wikipedia.org/wiki/MIME#Multipart_messages
-      return { headers: data, non_mime: non_mime, mime: parts }
     else
-      return { headers: data }
+      body = mime_io.gets_to_end
     end
+    return { headers: headers, parts: parts, body: body }
   end
 
   def self.mail_object_from_raw(raw_mime_data)
     parsed = parse_raw(raw_mime_data)
+    # return Email.new(from: "", to: "", subject: "", datetime: nil, body_html: "", body_text: "", attachments: [] of String)
+    if parsed[:headers]["Date"]?
+      datetime = Time::Format::RFC_2822.parse(parsed[:headers]["Date"])
+    else
+      datetime = nil
+    end
+    # puts parsed.inspect
     Email.new(from:     parsed[:headers]["From"],
               to:       parsed[:headers]["To"]? || parsed[:headers]["recipient"],
               subject:  parsed[:headers]["Subject"]? || "",    
-              datetime: Time::Format::RFC_2822.parse(parsed[:headers]["Date"]))
+              datetime: datetime,
+              body_html: parsed[:parts]["text/html"]?,
+              body_text: parsed[:parts]["text/plain"]?,
+              attachments: [] of String
+              )
   end
 
+  def self.parse_multipart(mime_io : IO, boundary : String) Hash(String, String)
+    # Manual parse:
+    parts = Array(String).new
+    buf   = Array(String).new
+    mime_io.each_line do |line|
+      if(line == "--#{boundary}")
+        puts "BOUNDARY FOUND"
+        self.parse_raw(mime_io, boundary)
+        parts << buf.join("\n")
+        buf = Array(String).new
+      elsif(line == "--#{boundary}--") # Terminal boundary
+        puts "TERMINAL BOUNDARY FOUND"
+        parts << buf.join("\n") unless buf.empty?
+        buf = Array(String).new # But really should be done
+      else
+        puts "LINE #{line}"
+        buf << line
+      end
+    end
+    non_mime = parts.shift # https://en.wikipedia.org/wiki/MIME#Multipart_messages
+    return Hash(String, String).new
+  end
+
+  def self.is_multipart(content_type : Nil)
+    return nil
+  end
+  def self.is_multipart(content_type : String)
+    if content_type =~ /^multipart/ 
+        "#{MIME::Multipart.parse_boundary(content_type)}"
+    else
+      nil
+    end
+  end
 end
