@@ -3,7 +3,7 @@ require "time"
 
 # `MIME` Provides raw email parsing capabilities
 module MIME
-  VERSION = "0.1.6"
+  VERSION = "0.1.7"
 
   struct Email
     property from
@@ -28,17 +28,29 @@ module MIME
   def self.parse_raw(mime_io : IO, boundary : String | Nil = nil )
     # Read headers in KEY: VAL format. RFC end is \n\n
     headers = Hash(String, String).new
+    last_key = "MISSING"
     mime_io.each_line do |line|
-      break if line.blank?
-      k,v = line.split(": ", 2)
-      headers[k]=v
+      if line.starts_with?("  ")
+        headers[last_key] += line[2..] # Append everything but the spaces
+      elsif line.blank?
+        break
+      else
+        k,v = line.split(": ", 2)
+        last_key = k
+        headers[k]=v
+      end
     end
     
     parts = Hash(String, String).new
     body  = nil
     content_type = headers["Content-Type"]?
     if (boundary = is_multipart(content_type))
-      # puts "Parse multipart."
+      # Should not be necessary, except that MIME::Multipart::Parser is too strict requiring CRLF
+      # https://github.com/crystal-lang/crystal/blob/master/src/mime/multipart/parser.cr
+      mime = mime_io.gets_to_end.gsub(/\r\n/, "\n").gsub(/\n/, "\r\n")
+      # puts "MIME: #{mime.inspect}"
+      mime_io = IO::Memory.new(mime)
+
       parser = MIME::Multipart::Parser.new(mime_io, boundary)
       while parser.has_next?
         parser.next do |headers, io|
