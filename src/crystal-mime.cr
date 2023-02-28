@@ -3,7 +3,7 @@ require "time"
 
 # `MIME` Provides raw email parsing capabilities
 module MIME
-  VERSION = "0.1.8"
+  VERSION = "0.1.9"
 
   struct Email
     property from
@@ -30,7 +30,7 @@ module MIME
     headers = Hash(String, String).new
     last_key = "MISSING"
     mime_io.each_line do |line|
-      if line.starts_with?(" ")
+      if line.starts_with?(/[\t ]/)        # Can have leading spaces or tabs
         headers[last_key] += line.lstrip() # Append everything but the spaces
       elsif line.blank?
         break
