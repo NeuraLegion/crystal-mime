@@ -27,6 +27,3 @@ describe MIME do
     true.should eq(true)
   end
 end
-
-
-

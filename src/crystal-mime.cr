@@ -1,5 +1,6 @@
 require "mime/multipart"
 require "time"
+require "quoted_printable"
 
 # `MIME` Provides raw email parsing capabilities
 module MIME
@@ -58,7 +59,15 @@ module MIME
         parser.next do |headers, io|
           content_type = headers["Content-Type"].split("; ", 2).first
           content = io.gets_to_end
-          parts[content_type] = content.gsub(/=\s*\r\n/, "") # https://www.hjp.at/doc/rfc/rfc1521.html
+          content_transfer_encoding = headers["Content-Transfer-Encoding"]?
+          # TODO: Handle the decoding of other content-transfer-encodings now.
+          if content_transfer_encoding == "quoted-printable"
+            # RFC2045 Section 6.7 (Quoted Printable or quoted-printable).
+            # See also: https://www.hjp.at/doc/rfc/rfc1521.html
+            parts[content_type] = QuotedPrintable.decode_string(content)
+          else
+            parts[content_type] = content
+          end
         end
       end
     else
