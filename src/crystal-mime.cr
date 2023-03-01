@@ -3,7 +3,7 @@ require "time"
 
 # `MIME` Provides raw email parsing capabilities
 module MIME
-  VERSION = "0.1.10"
+  VERSION = "0.1.11"
 
   struct Email
     property from
@@ -57,7 +57,8 @@ module MIME
       while parser.has_next?
         parser.next do |headers, io|
           content_type = headers["Content-Type"].split("; ", 2).first
-          parts[content_type] = io.gets_to_end
+          content = io.gets_to_end
+          parts[content_type] = content.gsub(/=\s*\r\n/, "") # https://www.hjp.at/doc/rfc/rfc1521.html
         end
       end
     else
@@ -84,29 +85,6 @@ module MIME
               attachments: [] of String,
               headers: parsed[:headers]
               )
-  end
-
-  def self.parse_multipart(mime_io : IO, boundary : String) Hash(String, String)
-    # Manual parse:
-    parts = Array(String).new
-    buf   = Array(String).new
-    mime_io.each_line do |line|
-      if(line == "--#{boundary}")
-        puts "BOUNDARY FOUND"
-        self.parse_raw(mime_io, boundary)
-        parts << buf.join("\n")
-        buf = Array(String).new
-      elsif(line == "--#{boundary}--") # Terminal boundary
-        puts "TERMINAL BOUNDARY FOUND"
-        parts << buf.join("\n") unless buf.empty?
-        buf = Array(String).new # But really should be done
-      else
-        puts "LINE #{line}"
-        buf << line
-      end
-    end
-    non_mime = parts.shift # https://en.wikipedia.org/wiki/MIME#Multipart_messages
-    return Hash(String, String).new
   end
 
   def self.is_multipart(content_type : Nil)
