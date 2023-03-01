@@ -5,7 +5,7 @@ require "./rfc2047"
 
 # `MIME` Provides raw email parsing capabilities
 module MIME
-  VERSION = "0.1.15"
+  VERSION = "0.1.16"
 
   struct Email
     property from
@@ -46,7 +46,6 @@ module MIME
         headers[k]=RFC2047.decode(v)
       end
     end
-    content_transfer_encoding = headers["Content-Transfer-Encoding"]?
     
     parts = Hash(String, String).new
     body  = nil
@@ -62,6 +61,7 @@ module MIME
       while parser.has_next?
         parser.next do |headers, io|
           content_type = headers["Content-Type"].split("; ", 2).first
+          content_transfer_encoding = headers["Content-Transfer-Encoding"]?
           content = io.gets_to_end
           # TODO: Handle the decoding of other content-transfer-encodings now.
           case content_transfer_encoding
