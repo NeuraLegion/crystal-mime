@@ -18,9 +18,9 @@ module RFC2047
       text = $3
       # B64 or QP decode, as necessary:
       case encoding.downcase
-      when 'b'
+      when "b"
         text = Base64.decode_string(text)
-      when 'q'
+      when "q"
         # RFC 2047 has a variant of quoted printable where a ' ' character
         # can be represented as an '_', rather than =32, so convert
         # any of these that we find before doing the QP decoding.
