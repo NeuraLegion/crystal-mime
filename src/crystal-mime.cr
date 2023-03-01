@@ -3,7 +3,7 @@ require "time"
 
 # `MIME` Provides raw email parsing capabilities
 module MIME
-  VERSION = "0.1.9"
+  VERSION = "0.1.10"
 
   struct Email
     property from
@@ -13,7 +13,9 @@ module MIME
     property body_html
     property body_text
     property attachments
-    def initialize(@from : String, @to : String, @subject : String, @datetime : Time | Nil, @body_html : String | Nil, @body_text : String | Nil, @attachments : Array(String))
+    property headers
+    def initialize(@from : String, @to : String, @subject : String, @datetime : Time | Nil, 
+        @body_html : String | Nil, @body_text : String | Nil, @attachments : Array(String), @headers : Hash(String, String))
     end
   end
 
@@ -79,7 +81,8 @@ module MIME
               datetime: datetime,
               body_html: parsed[:parts]["text/html"]?,
               body_text: parsed[:parts]["text/plain"]?,
-              attachments: [] of String
+              attachments: [] of String,
+              headers: parsed[:headers]
               )
   end
 
