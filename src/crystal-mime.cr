@@ -5,7 +5,7 @@ require "./rfc2047"
 
 # `MIME` Provides raw email parsing capabilities
 module MIME
-  VERSION = "0.1.13"
+  VERSION = "0.1.15"
 
   struct Email
     property from

@@ -1,8 +1,9 @@
 name: crystal-mime
-version: 0.1.14
+version: 0.1.15
 
 authors:
   - Jonathan Siegel <usiegj00@gmail.com>
+  - Lex Siegel      <usiegl00@gmail.com>
 
 crystal: 1.7.2
 
