@@ -28,6 +28,7 @@ describe MIME do
   end
 
   it "Follows RFC 2047" do
-    puts RFC2047.decode("=?UTF-8?q?Yo_=F0=9F=90=95?=")
+    str = RFC2047.decode("=?UTF-8?q?Yo_=F0=9F=90=95?=")
+    str.should eq("Yo 🐕")
   end
 end
