@@ -26,4 +26,8 @@ describe MIME do
     
     true.should eq(true)
   end
+
+  it "Follows RFC 2047" do
+    puts RFC2047.decode("=?UTF-8?q?Yo_=F0=9F=90=95?=")
+  end
 end

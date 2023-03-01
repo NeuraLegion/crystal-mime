@@ -1,10 +1,11 @@
 require "mime/multipart"
 require "time"
 require "quoted_printable"
+require "./rfc2047"
 
 # `MIME` Provides raw email parsing capabilities
 module MIME
-  VERSION = "0.1.11"
+  VERSION = "0.1.13"
 
   struct Email
     property from
@@ -40,9 +41,12 @@ module MIME
       else
         k,v = line.split(": ", 2)
         last_key = k
-        headers[k]=v
+
+        # Patch up subject (from =?UTF-8?q?Yo_=F0=9F=90=95?= => 🦂)
+        headers[k]=RFC2047.decode(v)
       end
     end
+    content_transfer_encoding = headers["Content-Transfer-Encoding"]?
     
     parts = Hash(String, String).new
     body  = nil
@@ -59,20 +63,23 @@ module MIME
         parser.next do |headers, io|
           content_type = headers["Content-Type"].split("; ", 2).first
           content = io.gets_to_end
-          content_transfer_encoding = headers["Content-Transfer-Encoding"]?
           # TODO: Handle the decoding of other content-transfer-encodings now.
-          if content_transfer_encoding == "quoted-printable"
-            # RFC2045 Section 6.7 (Quoted Printable or quoted-printable).
-            # See also: https://www.hjp.at/doc/rfc/rfc1521.html
-            parts[content_type] = QuotedPrintable.decode_string(content)
-          else
-            parts[content_type] = content
+          case content_transfer_encoding
+            when "quoted-printable"
+              # RFC2045 Section 6.7 (Quoted Printable or quoted-printable).
+              # See also: https://www.hjp.at/doc/rfc/rfc1521.html
+              parts[content_type] = QuotedPrintable.decode_string(content)
+            when "base64"
+              parts[content_type] = Base64.decode_string(content)
+            else
+              parts[content_type] = content
           end
         end
       end
     else
       body = mime_io.gets_to_end
     end
+
     return { headers: headers, parts: parts, body: body }
   end
 
