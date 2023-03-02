@@ -5,7 +5,7 @@ require "./rfc2047"
 
 # `MIME` Provides raw email parsing capabilities
 module MIME
-  VERSION = "0.1.16"
+  VERSION = "0.1.17"
 
   struct Email
     property from
@@ -35,6 +35,9 @@ module MIME
     last_key = "MISSING"
     mime_io.each_line do |line|
       if line.starts_with?(/[\t ]/)        # Can have leading spaces or tabs
+        if(last_key=="MISSING")
+          puts "Unlikely that this is intended. Seeing line without a key:\n#{line}"
+        end
         headers[last_key] += line.lstrip() # Append everything but the spaces
       elsif line.blank?
         break
