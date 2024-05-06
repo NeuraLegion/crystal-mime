@@ -38,7 +38,7 @@ module MIME
         if(last_key=="MISSING")
           puts "Unlikely that this is intended. Seeing line without a key:\n#{line}"
         end
-        headers[last_key] += line.lstrip() # Append everything but the spaces
+        headers[last_key] += " " + RFC2047.decode(line.lstrip()) # Append everything but the spaces
       elsif line.blank?
         break
       else
