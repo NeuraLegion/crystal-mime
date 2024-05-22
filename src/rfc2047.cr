@@ -29,7 +29,7 @@ module RFC2047
       else
         raise Unparseable.new(from)
       end
-      return text
+      text
     end
   end
 
