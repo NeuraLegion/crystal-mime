@@ -16,8 +16,17 @@ module MIME
     property body_text
     property attachments
     property headers
-    def initialize(@from : String, @to : String, @subject : String, @datetime : Time | Nil, 
-        @body_html : String | Nil, @body_text : String | Nil, @attachments : Array(String), @headers : Hash(String, String))
+
+    def initialize(
+      @from : String,
+      @to : String,
+      @subject : String,
+      @datetime : Time | Nil,
+      @body_html : String | Nil,
+      @body_text : String | Nil,
+      @attachments : Array(String),
+      @headers : Hash(String, String)
+    )
     end
   end
 
@@ -49,7 +58,7 @@ module MIME
         headers[k]=RFC2047.decode(v)
       end
     end
-    
+
     parts = Hash(String, String).new
     body  = nil
     content_type = headers["Content-Type"]?
@@ -81,6 +90,13 @@ module MIME
       end
     else
       body = mime_io.gets_to_end
+      content_transfer_encoding = headers["Content-Transfer-Encoding"]?
+      case content_transfer_encoding
+      when "quoted-printable"
+        body = QuotedPrintable.decode_string(body)
+      when "base64"
+        body = Base64.decode_string(body)
+      end
     end
 
     return { headers: headers, parts: parts, body: body }
@@ -95,12 +111,27 @@ module MIME
       datetime = nil
     end
     # puts parsed.inspect
+
+    # Body in case it's not a multipart
+    if content_type = parsed[:headers]["Content-Type"]?
+      content_type = content_type.split("; ", 2).first
+      case content_type
+      when "text/plain"
+        body_text = parsed[:body]
+      when "text/html"
+        body_html = parsed[:body]
+      end
+    else
+      # By default treat body as plain text
+      body_text = parsed[:body]
+    end
+
     Email.new(from:     parsed[:headers]["From"],
               to:       parsed[:headers]["To"]? || parsed[:headers]["recipient"],
-              subject:  parsed[:headers]["Subject"]? || "",    
+              subject:  parsed[:headers]["Subject"]? || "",
               datetime: datetime,
-              body_html: parsed[:parts]["text/html"]?,
-              body_text: parsed[:parts]["text/plain"]?,
+              body_html: parsed[:parts]["text/html"]? || body_html,
+              body_text: parsed[:parts]["text/plain"]? || body_text,
               attachments: [] of String,
               headers: parsed[:headers]
               )
@@ -109,8 +140,9 @@ module MIME
   def self.is_multipart(content_type : Nil)
     return nil
   end
+
   def self.is_multipart(content_type : String)
-    if content_type =~ /^multipart/ 
+    if content_type =~ /^multipart/
         "#{MIME::Multipart.parse_boundary(content_type)}"
     else
       nil

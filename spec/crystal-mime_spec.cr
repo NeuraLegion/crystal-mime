@@ -37,4 +37,40 @@ describe MIME do
     email = MIME.mail_object_from_raw(f)
     email.from.should eq("Случайный Пользователь <random-user@example.com>")
   end
+
+  describe "Parses base64-encoded emails" do
+    it "with a single body" do
+      f = {{ read_file("#{__DIR__}/test-mime3.email") }}
+      email = MIME.mail_object_from_raw(f)
+
+      expected_body = <<-PLAIN
+      Hello, Anna.
+      A new vacation is available at the office. Please let me know if you're interested.
+      Sincerely, Jonh.
+      PLAIN
+
+      email.body_text.should eq expected_body
+    end
+
+    it "with multipart" do
+      f = {{ read_file("#{__DIR__}/test-mime4.email") }}
+      email = MIME.mail_object_from_raw(f)
+
+      expected_text_body = <<-PLAIN
+      Hello, Anna.
+      A new vacation is available at the office. Please let me know if you're interested.
+      Sincerely, Jonh.
+      PLAIN
+
+      expected_html_body = <<-PLAIN
+      <h1>Hello, Anna.</h1>
+      <p>A new vacation is available at the office. Please let me know if you're interested.</p>
+      <hr>
+      <p>Sincerely, Jonh.</p>
+      PLAIN
+
+      email.body_text.should eq expected_text_body
+      email.body_html.should eq expected_html_body
+    end
+  end
 end
