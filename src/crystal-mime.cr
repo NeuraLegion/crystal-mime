@@ -58,6 +58,26 @@ module MIME
     headers
   end
 
+  def self.process_internal_mime(mime_io : IO, boundary : String | Nil = nil )
+      puts "SUBMIME: #{mime_io}"
+      mime = mime_io.gets_to_end.gsub(/\r\n/, "\n").gsub(/\n/, "\r\n")
+      puts "MIME: #{mime.inspect}"
+      mime_io = IO::Memory.new(mime)
+
+      parser = MIME::Multipart::Parser.new(mime_io, "----=_Part_422037_1345844982.1771799657420")
+      while parser.has_next?
+        parser.next do |headers, io|
+          content_type = headers["Content-Type"].split("; ", 2).first
+          content_transfer_encoding = headers["Content-Transfer-Encoding"]?
+          content = io.gets_to_end
+          puts "INTERNAL CONTENT: ", content
+        end
+      end
+      puts "INTERNAL CONTENT BODY: ", mime_io.gets_to_end
+
+      return ""
+  end
+
   # Support efficient access as IO Stream
   # Mail looks like:
   # Content-Type=multipart%2Fmixed%3B+boundary%3D%22------------020601070403020003080006%22&Date=Fri%2...
