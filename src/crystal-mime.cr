@@ -35,10 +35,7 @@ module MIME
     self.parse_raw(IO::Memory.new(mime_str))
   end
 
-  # Support efficient access as IO Stream
-  # Mail looks like:
-  # Content-Type=multipart%2Fmixed%3B+boundary%3D%22------------020601070403020003080006%22&Date=Fri%2...
-  def self.parse_raw(mime_io : IO, boundary : String | Nil = nil )
+  def self.parse_headers(mime_io : IO) : Hash(String, String)
     # Read headers in KEY: VAL format. RFC end is \n\n
     headers = Hash(String, String).new
     last_key = "MISSING"
@@ -58,7 +55,14 @@ module MIME
         headers[k]=RFC2047.decode(v)
       end
     end
+    headers
+  end
 
+  # Support efficient access as IO Stream
+  # Mail looks like:
+  # Content-Type=multipart%2Fmixed%3B+boundary%3D%22------------020601070403020003080006%22&Date=Fri%2...
+  def self.parse_raw(mime_io : IO, boundary : String | Nil = nil )
+    headers = parse_headers(mime_io)
     parts = Hash(String, String).new
     body  = nil
     content_type = headers["Content-Type"]?
