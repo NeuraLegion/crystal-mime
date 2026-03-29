@@ -112,7 +112,7 @@ module MIME
             # HTTP::Headers{"Content-Type" => "multipart/alternative; ", "" => "boundary=\"----=some_part\""}
             # Having such headers prevents getting boundary from is_multipart, thus we need to construct valid string 
             # for parsing boundary.
-            joined_headers = headers.map { |k, v| "#{v.join}" }.join(" ").lstrip()
+            joined_headers = "#{content_type}; #{headers[""]}"
             parsed_boundary = MIME::Multipart.parse_boundary(joined_headers)
             internal_mime_parts = process_internal_mime(mime_io_from_content, parsed_boundary)
             parts = parts.merge(internal_mime_parts)
