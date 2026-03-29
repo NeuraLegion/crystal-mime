@@ -115,7 +115,7 @@ module MIME
             joined_headers = headers.map { |k, v| "#{v.join}" }.join(" ").lstrip()
             parsed_boundary = MIME::Multipart.parse_boundary(joined_headers)
             internal_mime_parts = process_internal_mime(mime_io_from_content, parsed_boundary)
-            parts = parts.merge internal_mime_parts
+            parts = parts.merge(internal_mime_parts)
             next
           end
 
