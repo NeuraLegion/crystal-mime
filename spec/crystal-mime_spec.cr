@@ -5,7 +5,7 @@ describe MIME do
   it "Ensure test mail is RFC 1341 compliant" do
     # Ensure CRLF's are present in test:
     f = {{ read_file("#{__DIR__}/test-mime1.email") }}
-    crlf = f.gsub(/\r\n/,"\n").gsub(/\n/,"\r\n")
+    crlf = f.gsub(/\r\n/, "\n").gsub(/\n/, "\r\n")
     f.should eq(crlf)
   end
 
@@ -13,7 +13,7 @@ describe MIME do
   it "Parses test1 email" do
     # Ensure CRLF's are present in test:
     f = {{ read_file("#{__DIR__}/test-mime1.email") }}
-    crlf = f.gsub(/\r\n/,"\n").gsub(/\n/,"\r\n")
+    crlf = f.gsub(/\r\n/, "\n").gsub(/\n/, "\r\n")
 
     email = MIME.mail_object_from_raw(crlf)
     email.from.should eq("Jerry Peek <jerry@ora.com>")
@@ -23,7 +23,7 @@ describe MIME do
     body_text = email.body_text
     body_text.should be_a(String)
     body_text && body_text.should start_with("We've just released")
-    
+
     true.should eq(true)
   end
 
@@ -31,7 +31,7 @@ describe MIME do
     str = RFC2047.decode("=?UTF-8?q?Yo_=F0=9F=90=95?=")
     str.should eq("Yo 🐕")
   end
-  
+
   it "Parses multi-line RFC2047-encoded headers" do
     f = {{ read_file("#{__DIR__}/test-mime2.email") }}
     email = MIME.mail_object_from_raw(f)
@@ -78,7 +78,7 @@ describe MIME do
     it "with multipart alternative inside mixed" do
       f = {{ read_file("#{__DIR__}/test-mime-with-mixed-multipart.eml") }}
       email = MIME.mail_object_from_raw(f)
-      expected_html_body = <<-PLAIN 
+      expected_html_body = <<-PLAIN
       <p>We see you&rsquo;re trying to create (or update) your XXX account. Use the following security code to verify your info. This code will only be valid for 20 minutes.</p>
       <p>Your one-time security code: <span style="text-decoration: underline;"><strong>456748</strong></span></p>
       <p><b>DO NOT SHARE.</b> Only enter it online.  Our reps will never ask for it.</p>
