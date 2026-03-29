@@ -59,7 +59,6 @@ module MIME
   end
 
   def self.process_internal_mime(mime_io : IO, boundary : String | Nil = nil ) : Hash(String, String)
-      mime_io = IO::Memory.new(mime_io.gets_to_end)
       parts = Hash(String, String).new
       parser = MIME::Multipart::Parser.new(mime_io, boundary || "")
       while parser.has_next?
