@@ -25,7 +25,7 @@ module MIME
       @body_html : String | Nil,
       @body_text : String | Nil,
       @attachments : Array(String),
-      @headers : Hash(String, String)
+      @headers : Hash(String, String),
     )
     end
   end
@@ -40,58 +40,58 @@ module MIME
     headers = Hash(String, String).new
     last_key = "MISSING"
     mime_io.each_line do |line|
-      if line.starts_with?(/[\t ]/)        # Can have leading spaces or tabs
-        if(last_key=="MISSING")
+      if line.starts_with?(/[\t ]/) # Can have leading spaces or tabs
+        if last_key == "MISSING"
           puts "Unlikely that this is intended. Seeing line without a key:\n#{line}"
         end
-        headers[last_key] += RFC2047.decode(line.lstrip()) # Append everything but the spaces
+        headers[last_key] += RFC2047.decode(line.lstrip) # Append everything but the spaces
       elsif line.blank?
         break
       else
-        k,v = line.split(": ", 2)
+        k, v = line.split(": ", 2)
         last_key = k
 
         # Patch up subject (from =?UTF-8?q?Yo_=F0=9F=90=95?= => 🦂)
-        headers[k]=RFC2047.decode(v)
+        headers[k] = RFC2047.decode(v)
       end
     end
     headers
   end
 
-  def self.process_internal_mime(mime_io : IO, boundary : String | Nil = nil ) : Hash(String, String)
-      parts = Hash(String, String).new
-      parser = MIME::Multipart::Parser.new(mime_io, boundary || "")
-      while parser.has_next?
-        parser.next do |headers, io|
-          content_type = headers["Content-Type"].split("; ", 2).first
-          content_transfer_encoding = headers["Content-Transfer-Encoding"]?
-          content = io.gets_to_end
-          final_content = ""
-          case content_transfer_encoding
-            when "quoted-printable"
-              # RFC2045 Section 6.7 (Quoted Printable or quoted-printable).
-              # See also: https://www.hjp.at/doc/rfc/rfc1521.html
-              final_content = QuotedPrintable.decode_string(content)
-            when "base64"
-              final_content = Base64.decode_string(content)
-            else
-              final_content = content
-          end
-
-          parts[content_type] = final_content
+  def self.process_internal_mime(mime_io : IO, boundary : String | Nil = nil) : Hash(String, String)
+    parts = Hash(String, String).new
+    parser = MIME::Multipart::Parser.new(mime_io, boundary || "")
+    while parser.has_next?
+      parser.next do |headers, io|
+        content_type = headers["Content-Type"].split("; ", 2).first
+        content_transfer_encoding = headers["Content-Transfer-Encoding"]?
+        content = io.gets_to_end
+        final_content = ""
+        case content_transfer_encoding
+        when "quoted-printable"
+          # RFC2045 Section 6.7 (Quoted Printable or quoted-printable).
+          # See also: https://www.hjp.at/doc/rfc/rfc1521.html
+          final_content = QuotedPrintable.decode_string(content)
+        when "base64"
+          final_content = Base64.decode_string(content)
+        else
+          final_content = content
         end
-      end
 
-      parts
+        parts[content_type] = final_content
+      end
+    end
+
+    parts
   end
 
   # Support efficient access as IO Stream
   # Mail looks like:
   # Content-Type=multipart%2Fmixed%3B+boundary%3D%22------------020601070403020003080006%22&Date=Fri%2...
-  def self.parse_raw(mime_io : IO, boundary : String | Nil = nil )
+  def self.parse_raw(mime_io : IO, boundary : String | Nil = nil)
     headers = parse_headers(mime_io)
     parts = Hash(String, String).new
-    body  = nil
+    body = nil
     content_type = headers["Content-Type"]?
     if (boundary = is_multipart(content_type))
       # Should not be necessary, except that MIME::Multipart::Parser is too strict requiring CRLF
@@ -109,7 +109,7 @@ module MIME
             mime_io_from_content = IO::Memory.new(content)
             # Rejoin headers to get boundary. MIME::Multipart::Parser gives headers for content with inner multipart as e.g.
             # HTTP::Headers{"Content-Type" => "multipart/alternative; ", "" => "boundary=\"----=some_part\""}
-            # Having such headers prevents getting boundary from is_multipart, thus we need to construct valid string 
+            # Having such headers prevents getting boundary from is_multipart, thus we need to construct valid string
             # for parsing boundary.
             joined_headers = "#{content_type}; #{headers[""]}"
             parsed_boundary = MIME::Multipart.parse_boundary(joined_headers)
@@ -120,14 +120,14 @@ module MIME
 
           # TODO: Handle the decoding of other content-transfer-encodings now.
           case content_transfer_encoding
-            when "quoted-printable"
-              # RFC2045 Section 6.7 (Quoted Printable or quoted-printable).
-              # See also: https://www.hjp.at/doc/rfc/rfc1521.html
-              parts[content_type] = QuotedPrintable.decode_string(content)
-            when "base64"
-              parts[content_type] = Base64.decode_string(content)
-            else
-              parts[content_type] = content
+          when "quoted-printable"
+            # RFC2045 Section 6.7 (Quoted Printable or quoted-printable).
+            # See also: https://www.hjp.at/doc/rfc/rfc1521.html
+            parts[content_type] = QuotedPrintable.decode_string(content)
+          when "base64"
+            parts[content_type] = Base64.decode_string(content)
+          else
+            parts[content_type] = content
           end
         end
       end
@@ -142,7 +142,7 @@ module MIME
       end
     end
 
-    return { headers: headers, parts: parts, body: body }
+    return {headers: headers, parts: parts, body: body}
   end
 
   def self.mail_object_from_raw(raw_mime_data)
@@ -169,15 +169,15 @@ module MIME
       body_text = parsed[:body]
     end
 
-    Email.new(from:     parsed[:headers]["From"],
-              to:       parsed[:headers]["To"]? || parsed[:headers]["recipient"],
-              subject:  parsed[:headers]["Subject"]? || "",
-              datetime: datetime,
-              body_html: parsed[:parts]["text/html"]? || body_html,
-              body_text: parsed[:parts]["text/plain"]? || body_text,
-              attachments: [] of String,
-              headers: parsed[:headers]
-              )
+    Email.new(from: parsed[:headers]["From"],
+      to: parsed[:headers]["To"]? || parsed[:headers]["recipient"],
+      subject: parsed[:headers]["Subject"]? || "",
+      datetime: datetime,
+      body_html: parsed[:parts]["text/html"]? || body_html,
+      body_text: parsed[:parts]["text/plain"]? || body_text,
+      attachments: [] of String,
+      headers: parsed[:headers]
+    )
   end
 
   def self.is_multipart(content_type : Nil)
@@ -186,7 +186,7 @@ module MIME
 
   def self.is_multipart(content_type : String)
     if content_type =~ /^multipart/
-        "#{MIME::Multipart.parse_boundary(content_type)}"
+      "#{MIME::Multipart.parse_boundary(content_type)}"
     else
       nil
     end
