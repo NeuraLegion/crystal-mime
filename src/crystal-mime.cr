@@ -35,10 +35,7 @@ module MIME
     self.parse_raw(IO::Memory.new(mime_str))
   end
 
-  # Support efficient access as IO Stream
-  # Mail looks like:
-  # Content-Type=multipart%2Fmixed%3B+boundary%3D%22------------020601070403020003080006%22&Date=Fri%2...
-  def self.parse_raw(mime_io : IO, boundary : String | Nil = nil )
+  def self.parse_headers(mime_io : IO) : Hash(String, String)
     # Read headers in KEY: VAL format. RFC end is \n\n
     headers = Hash(String, String).new
     last_key = "MISSING"
@@ -58,7 +55,41 @@ module MIME
         headers[k]=RFC2047.decode(v)
       end
     end
+    headers
+  end
 
+  def self.process_internal_mime(mime_io : IO, boundary : String | Nil = nil ) : Hash(String, String)
+      parts = Hash(String, String).new
+      parser = MIME::Multipart::Parser.new(mime_io, boundary || "")
+      while parser.has_next?
+        parser.next do |headers, io|
+          content_type = headers["Content-Type"].split("; ", 2).first
+          content_transfer_encoding = headers["Content-Transfer-Encoding"]?
+          content = io.gets_to_end
+          final_content = ""
+          case content_transfer_encoding
+            when "quoted-printable"
+              # RFC2045 Section 6.7 (Quoted Printable or quoted-printable).
+              # See also: https://www.hjp.at/doc/rfc/rfc1521.html
+              final_content = QuotedPrintable.decode_string(content)
+            when "base64"
+              final_content = Base64.decode_string(content)
+            else
+              final_content = content
+          end
+
+          parts[content_type] = final_content
+        end
+      end
+
+      parts
+  end
+
+  # Support efficient access as IO Stream
+  # Mail looks like:
+  # Content-Type=multipart%2Fmixed%3B+boundary%3D%22------------020601070403020003080006%22&Date=Fri%2...
+  def self.parse_raw(mime_io : IO, boundary : String | Nil = nil )
+    headers = parse_headers(mime_io)
     parts = Hash(String, String).new
     body  = nil
     content_type = headers["Content-Type"]?
@@ -66,7 +97,6 @@ module MIME
       # Should not be necessary, except that MIME::Multipart::Parser is too strict requiring CRLF
       # https://github.com/crystal-lang/crystal/blob/master/src/mime/multipart/parser.cr
       mime = mime_io.gets_to_end.gsub(/\r\n/, "\n").gsub(/\n/, "\r\n")
-      # puts "MIME: #{mime.inspect}"
       mime_io = IO::Memory.new(mime)
 
       parser = MIME::Multipart::Parser.new(mime_io, boundary)
@@ -75,6 +105,19 @@ module MIME
           content_type = headers["Content-Type"].split("; ", 2).first
           content_transfer_encoding = headers["Content-Transfer-Encoding"]?
           content = io.gets_to_end
+          if is_multipart(content_type)
+            mime_io_from_content = IO::Memory.new(content)
+            # Rejoin headers to get boundary. MIME::Multipart::Parser gives headers for content with inner multipart as e.g.
+            # HTTP::Headers{"Content-Type" => "multipart/alternative; ", "" => "boundary=\"----=some_part\""}
+            # Having such headers prevents getting boundary from is_multipart, thus we need to construct valid string 
+            # for parsing boundary.
+            joined_headers = "#{content_type}; #{headers[""]}"
+            parsed_boundary = MIME::Multipart.parse_boundary(joined_headers)
+            internal_mime_parts = process_internal_mime(mime_io_from_content, parsed_boundary)
+            parts = parts.merge(internal_mime_parts)
+            next
+          end
+
           # TODO: Handle the decoding of other content-transfer-encodings now.
           case content_transfer_encoding
             when "quoted-printable"
