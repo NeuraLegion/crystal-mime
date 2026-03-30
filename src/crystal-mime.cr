@@ -41,7 +41,7 @@ module MIME
     last_key = "MISSING"
     mime_io.each_line do |line|
       if line.starts_with?(/[\t ]/) # Can have leading spaces or tabs
-        if (last_key == "MISSING")
+        if last_key == "MISSING"
           puts "Unlikely that this is intended. Seeing line without a key:\n#{line}"
         end
         headers[last_key] += RFC2047.decode(line.lstrip) # Append everything but the spaces
